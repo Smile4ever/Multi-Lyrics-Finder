@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<translations>
+	<dialogtitle_normal>Sözler</dialogtitle_normal>
+	<dialogtitle_notfound>Bulunamadı</dialogtitle_notfound>
+	<dialogtitle_lyricsof>Sözleri</dialogtitle_lyricsof>
+	<dialogtitle_performedby>tarafından</dialogtitle_performedby>
+	<button_getlyrics>Sözleri Alın</button_getlyrics>
+	<button_refresh>Yenileyin</button_refresh>
+	<button_switch>Geçin</button_switch>
+	<button_close>Kapatın</button_close>
+	<button_google>Google ile arayın</button_google>
+	<button_update>Güncellemeleri alın</button_update>
+	<label_title>Başlık:</label_title>
+	<label_artist>Sanatçı:</label_artist>
+	<label_source>Kaynak:</label_source>
+	<message_newsong>Yeni şarkı yüklendi. Sözleri Alın düğmesine tıklayarak, sözleri alın.</message_newsong>
+	<message_loading>Yükleniyor...</message_loading>
+	<message_incorrect>Geçersiz sanatçı ya da başlık.</message_incorrect>
+	<message_notfound>Söz bulunamadı.</message_notfound>
+	<message_nosong>Hiçbir şarkı yüklü değil.</message_nosong>
+	<message_savelyrics>Şarkı Sözlerini Kaydet</message_savelyrics>
+</translations>
+
+<!-- Translated by OzancanKaratas96 -->
