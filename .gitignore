@@ -1,0 +1,7 @@
+# IDEA
+/.idea/shelf/
+/.idea/workspace.xml
+/.idea/vcs.xml
+
+build/
+dist/

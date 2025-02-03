@@ -7,13 +7,20 @@ pip install requests
 pip install psutil
 pip install bs4
 pip install plyer
-pip install pygetwindow
 pip install pywinctl
+
+DEV dependencies:
+pip install pyinstaller
+python -m PyInstaller --onefile --add-data "locale;locale" multi_lyrics_finder.py
+or
+python -m PyInstaller --onefile --add-data "locale:locale" multi_lyrics_finder.py
 
   WARNING: The scripts helpviewer.exe, img2png.exe, img2py.exe, img2xpm.exe, pycrust.exe, pyshell.exe, pyslices.exe, pyslicesshell.exe, pywxrc.exe, wxdemo.exe, wxdocs.exe and wxget.exe are installed in 'C:\Users\6061894\AppData\Roaming\Python\Python313\Scripts' which is not on PATH.
   Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
 
 pip install pymediainfo # not used
 pip install wxGlade #not used
+pip install pygetwindow # not used
+
 
 

@@ -1,6 +1,7 @@
 import wx
 import webbrowser
 import os
+import sys
 import platform
 import threading
 import platform
@@ -14,8 +15,7 @@ from multi_media_title_fetcher import MultiMediaTitleFetcher
 from lyrics_utils import LyricsUtils
 from get_lyrics import GetLyrics
 
-# Multi Lyrics Finder version
-version = "0.1.0"
+VERSION = "0.1.0"
 # Languages code conversion table: iso-639-1 to iso-639-3
 lang_os_to_iso = {
     'af': "afr",
@@ -90,7 +90,7 @@ class LyricsFinder(wx.Frame):
     def __init__(self):
         logging.basicConfig(level=logging.INFO)
 
-        super().__init__(None, title="Multi Lyrics Finder " + version, size=(500, 800))
+        super().__init__(None, title="Multi Lyrics Finder " + VERSION, size=(500, 800))
         panel = wx.Panel(self)
         panel.SetSizer(wx.BoxSizer(wx.VERTICAL))
 
@@ -192,7 +192,11 @@ class LyricsFinder(wx.Frame):
         lang_code = lang_os_to_iso.get(lang_code_2, 'en')
 
         # Get the folder where the .py script is located
-        script_dir = os.path.dirname(os.path.abspath(__file__))
+        if getattr(sys, 'frozen', False):  # Check if the app is frozen (running from a packaged .exe)
+            script_dir = sys._MEIPASS  # Running as a bundled executable
+        else:
+            script_dir = os.path.dirname(os.path.abspath(__file__)) # Running as a normal script
+
         locale_folder = os.path.join(script_dir, 'locale')  # Assuming locale folder is in the same directory as the script
         translation_file = os.path.join(locale_folder, f"{lang_code}.xml")
         
