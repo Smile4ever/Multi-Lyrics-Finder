@@ -34,7 +34,6 @@ Requirements:
     pip install psutil
     pip install bs4
     pip install plyer
-    pip install pygetwindow
     pip install pywinctl
 
 I'm looking if we can make the installation process easier in the future.

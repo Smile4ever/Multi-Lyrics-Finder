@@ -2,7 +2,6 @@ import threading
 import platform
 import subprocess
 import wx
-import pygetwindow as gw
 import pywinctl as pwc
 import psutil
 import logging
@@ -27,10 +26,10 @@ class MultiMediaTitleFetcher:
 
     def get_media_title(self):
         media_sources = [
-            self.get_media_title_deezerweb(),
-            self.get_media_title_vlc(),
-            self.get_media_title_youtubeweb(),
-            self.get_media_title_spotifyweb(),
+            self.get_media_title_generic("Deezer"),
+            self.get_media_title_generic("VLC Media Player"),
+            self.get_media_title_generic("Spotify"),
+            self.get_media_title_generic("YouTube"),
             self.get_media_title_spotifyapp(),
             self.get_media_title_deezerapp()
         ]
@@ -39,26 +38,6 @@ class MultiMediaTitleFetcher:
         for media_title in media_sources:
             if media_title:
                 return media_title
-
-        return None
-
-    def get_media_title_youtubeweb(self):
-        windows = gw.getWindowsWithTitle('')
-        relevant_browser_windows = [window for window in windows if ' - YouTube' in window.title]
-
-        for window in relevant_browser_windows:
-            title = window.title
-            return title.split(" - YouTube")[0].strip()
-
-        return None
-
-    def get_media_title_spotifyweb(self):
-        windows = gw.getWindowsWithTitle('')
-        relevant_browser_windows = [window for window in windows if ' - Spotify' in window.title]
-
-        for window in relevant_browser_windows:
-            title = window.title
-            return " - ".join(title.split(" - Spotify")[0].split(" • ")[::-1])
 
         return None
 
@@ -96,24 +75,15 @@ class MultiMediaTitleFetcher:
 
         return None
 
-    def get_media_title_deezerweb(self):
-        windows = gw.getWindowsWithTitle('')
-        relevant_browser_windows = [window for window in windows if ' - Deezer' in window.title]
+    def get_media_title_generic(self, app):
+        windows_pwc = pwc.getWindowsWithTitle(' - ' + app, condition=pwc.Re.CONTAINS)
 
-        for window in relevant_browser_windows:
+        for window in windows_pwc:
             title = window.title
-            return " - ".join(title.split(" - Deezer")[0].split(" - ")[::-1])
-
-        return None
-
-    def get_media_title_vlc(self):
-        windows = gw.getWindowsWithTitle('')
-        relevant_windows = [window for window in windows if ' - VLC Media Player' in window.title]
-
-        for window in relevant_windows:
-            title = window.title
-            return title.split(" - VLC Media Player")[0].strip()
-
+            if app == "Deezer": return " - ".join(title.split(" - " + app)[0].split(" - ")[::-1])
+            if app == "Spotify": return " - ".join(title.split(" - " + app)[0].split(" • ")[::-1])
+            if app == "YouTube": return title.split(" - " + app)[0].strip()
+            if app == "VLC Media Player": return title.split(" - " + app)[0].strip()
         return None
 
     def stop(self):
