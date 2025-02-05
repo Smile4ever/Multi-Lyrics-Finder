@@ -30,9 +30,10 @@ Installation
 ------------
 Since Multi Lyrics Finder is made with wxPython and wxWidgets, it should run on at least Windows, macOS and Linux.
 
-Requirements:
+To download an installer for Windows, see [Releases](https://github.com/Smile4ever/Multi-Lyrics-Finder/releases). 
 
-    Python 3
+On other platforms, you need Python 3.13 and the following dependencies:
+
     pip install wxPython
     pip install requests
     pip install psutil
@@ -40,7 +41,14 @@ Requirements:
     pip install plyer
     pip install pywinctl
 
-I'm looking if we can make the installation process easier in the future.
+Also install cx_Freeze:
+
+    #usually python -m pip install cx_Freeze, but there is a bug in the current version see https://github.com/marcelotduarte/cx_Freeze/issues/2659
+    pip install --extra-index-url https://test.pypi.org/simple/ cx-Freeze==7.3.0.2797.dev1738645816
+
+Now build the program:
+
+    buildscripts/build.py
 
 Browser-based players
 ---------------------
