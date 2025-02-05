@@ -16,7 +16,7 @@ Name "Multi Lyrics Finder"
 !include "MUI2.nsh"
 
 # Installer details
-Outfile "..\build\setup\${PRODUCT} Setup ${VERSION}.exe"
+Outfile "..\build\setup\${PRODUCTNOSPACES}-Setup-${VERSION}.exe"
 InstallDir "$PROGRAMFILES64\${PRODUCT}"
 RequestExecutionLevel admin
 ShowInstDetails show   ; Show installation progress
