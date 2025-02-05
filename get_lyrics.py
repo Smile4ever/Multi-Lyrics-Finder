@@ -2,6 +2,7 @@ import re
 import requests
 import logging
 import urllib
+import json
 
 from bs4 import BeautifulSoup
 from bs4.element import Comment
@@ -11,23 +12,15 @@ from lyrics_utils import LyricsUtils
 class GetLyrics:
     TIMEOUT = 5  # Timeout in seconden voor netwerkoproepen
 
-    def __init__(self):
+    def __init__(self, config_path):
         logging.basicConfig(level=logging.INFO)  # Latere aanpassing mogelijk naar `INFO` of `DEBUG`
+        self.config_path = config_path
 
         # https://www.streetdirectory.com/lyricadvisor/song/wpoej/no_pude_olvidarte/
 
-        self.sources = {
-            "musikguru": "",
-            "azlyrics": "https://www.azlyrics.com/lyrics/{artist}/{title}.html",
-            "lyricsmania": "https://www.lyricsmania.com/{title}_lyrics_{artist}.html",
-            "letras": "https://www.letras.com/{artist}/{title}/",
-            "genius": "",
-            "lyricsmode": "",
-            "musica": ""
-
-            # "sonichits": "https://sonichits.com/video/{artist}/{title}", # URL works but 403
-            #"lyricscom": "https://www.lyrics.com/{title}-lyrics-{artist}.html"
-        }
+        self.sources = self.load_sources()
+        # "sonichits": "https://sonichits.com/video/{artist}/{title}", # URL works but 403
+        # "lyricscom": "https://www.lyrics.com/{title}-lyrics-{artist}.html"
 
         # https://musikguru.de/audrey-landers/songtext-honeymoon-in-trindidad-532763.html
         self.musikguru_search_url = "https://musikguru.de/search/ac/"
@@ -42,6 +35,31 @@ class GetLyrics:
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
+
+    def load_sources(self):
+        """Load lyrics sources from the config.json file and populate the sources dictionary."""
+        sources = {}
+
+        # Load config from JSON file
+        with open(self.config_path, 'r') as f:
+            config = json.load(f)
+
+        # Iterate through the "lyrics_sources" array in the config
+        for source in config.get("lyrics_sources", []):
+            # Skip disabled sources
+            if source.get("disabled", False):
+                continue
+
+            # Get the name of the source (e.g., "azlyrics", "musikguru", etc.)
+            name = source["name"]
+
+            # Get the format (URL or "search") for the source
+            format_string = source.get("format", "")
+
+            # Assign the URL format string to the corresponding name in the sources dictionary
+            sources[name] = format_string
+
+        return sources
 
     def get_lyrics(self, title_x, artist_x):
         if not title_x or not artist_x:

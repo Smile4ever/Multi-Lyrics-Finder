@@ -1,0 +1,27 @@
+Install Python 3.13 and run as admin/sudo:
+
+> C:\Program Files\Python313\Scripts>
+pip install wxPython
+pip install requests
+pip install psutil
+pip install bs4
+pip install plyer
+pip install pywinctl
+
+On Windows, also install NSIS.
+On Windows: if not run as admin, add C:\Users\6061894\AppData\Roaming\Python\Python313\Scripts to your path
+
+DEV dependencies (cx_Freeze):
+#usually python -m pip install cx_Freeze, but there is a bug in the current version see https://github.com/marcelotduarte/cx_Freeze/issues/2659
+pip install --extra-index-url https://test.pypi.org/simple/ cx-Freeze==7.3.0.2797.dev1738645816
+buildscripts/build.py
+
+== Previously used ==
+pip install pymediainfo # not used
+pip install wxGlade #not used
+pip install pygetwindow # not used
+
+DEV dependencies:
+PyInstaller # not used
+pip install pyinstaller
+

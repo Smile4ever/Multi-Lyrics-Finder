@@ -16,6 +16,10 @@ Features
   * VLC Media Player
 * Save lyrics to a text file
 * Multilangual; MLF will try to match your user (system) language
+* Configuration file
+  * Disable or reorder lyrics websites
+  * Add, disable or reorder media players
+  * Use a custom search engine
 
 Adding support for other players is quite straightforward if the window title contains enough information. This can be done by editing multi_media_title_fetcher.py, pull requests are welcome.
 
@@ -49,7 +53,9 @@ Download: https://greasyfork.org/nl/scripts/525581-audio-tab-title
 
 Lyrics not found?
 ----------------
-With so many sites supported, it's still imaginable that the lyrics for a specific song are not yet available. You can add them yourself [using Lyricsmode.com](https://www.lyricsmode.com/lyrics_submit.php) if you want.
+With so many sites supported, it's still imaginable that the lyrics for a specific song are not yet available.
+
+You can add them yourself [using AZLyrics](https://www.azlyrics.com/add.php), [using Lyricsmode.com](https://www.lyricsmode.com/lyrics_submit.php) or [using Genius](https://genius.com/new) if you want.
 
 Other tips:
 * Did you install the user script for browser-based players?
@@ -80,6 +86,6 @@ Wayland, Linux and macOS support
 -------
 MLF hasn't been tested (yet) on Linux X11 or macOS. In theory it should work.
 
-The automatic lyric fetching on Wayland does not work because of reliance on pygetwindow and pywinctl.
+The automatic lyric fetching on Wayland does not work because of reliance on pywinctl.
 
 

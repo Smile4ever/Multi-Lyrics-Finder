@@ -1,0 +1,89 @@
+{
+  "language": "auto",
+  "lyrics_sources": [
+    {
+      "name": "musikguru",
+	  "format": "search",
+      "priority": 1, 
+      "disabled": false
+    },
+    {
+      "name": "azlyrics",
+	  "format": "https://www.azlyrics.com/lyrics/{artist}/{title}.html",
+      "priority": 2,
+      "disabled": false
+    },
+    {
+      "name": "lyricsmania",
+	  "format": "https://www.lyricsmania.com/{title}_lyrics_{artist}.html",
+      "priority": 3,
+      "disabled": false
+    },
+    {
+      "name": "letras",
+	  "format": "https://www.letras.com/{artist}/{title}/",
+      "priority": 4,
+      "disabled": false
+    },
+    {
+      "name": "genius",
+	  "format": "search",
+      "priority": 5,
+      "disabled": false
+    },
+    {
+      "name": "lyricsmode",
+	  "format": "search",
+      "priority": 6,
+      "disabled": false
+    },
+    {
+      "name": "musica",
+	  "format": "search",
+      "priority": 7,
+      "disabled": false
+    }
+  ],
+  "media_players": [
+    {
+      "name": "YouTube",
+      "format": "{artist} - {title} - {app}",
+      "priority": 1,
+      "type": "generic",
+      "disabled": false
+    },
+    {
+      "name": "Deezer",
+      "format": "{title} - {artist} - {app}",
+      "priority": 2,
+      "type": "generic",
+      "disabled": false
+    },
+    {
+      "name": "VLC Media Player",
+      "format": "{artist} - {title} - {app}",
+      "priority": 3,
+      "type": "generic",
+      "disabled": false
+    },
+    {
+      "name": "Spotify",
+      "format": "{title} • {artist} - {app}",
+      "priority": 4,
+      "type": "generic",
+      "disabled": false
+    },
+    {
+      "name": "Spotify",
+      "format": "{artist} - {title}",
+      "priority": 5,
+      "type": "checkappprocess",
+      "disabled": false
+    }
+  ],
+  "search": {
+    "engine": "Google",
+    "searchurl": "https://www.google.com/search?q=",
+    "suffix": "lyrics"
+  }
+}

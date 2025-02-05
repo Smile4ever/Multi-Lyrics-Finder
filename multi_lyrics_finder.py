@@ -1,3 +1,6 @@
+VERSION = \
+"0.1.1"
+
 import wx
 import webbrowser
 import os
@@ -7,6 +10,7 @@ import threading
 import platform
 import locale
 import logging
+import json
 
 import xml.etree.ElementTree as ET
 from plyer import notification
@@ -14,8 +18,8 @@ from plyer import notification
 from multi_media_title_fetcher import MultiMediaTitleFetcher
 from lyrics_utils import LyricsUtils
 from get_lyrics import GetLyrics
+from file_utils import FileUtils
 
-VERSION = "0.1.0"
 # Languages code conversion table: iso-639-1 to iso-639-3
 lang_os_to_iso = {
     'af': "afr",
@@ -85,7 +89,8 @@ lang_os_to_iso = {
 }
 
 class LyricsFinder(wx.Frame):
-    _getLyrics = GetLyrics()
+    configFilePath = FileUtils.get_file_path('config.json')
+    _getLyrics = GetLyrics(configFilePath)
 
     def __init__(self):
         logging.basicConfig(level=logging.INFO)
@@ -115,13 +120,13 @@ class LyricsFinder(wx.Frame):
         grid.Add(self.artist_text, pos=(0, 1))
         grid.Add(self.switch_button, pos=(0, 2))
 
-        # Buttons for searching lyrics and Google
+        # Buttons for searching lyrics and search engine
         self.search_button = wx.Button(panel, label="Search Lyrics")
         self.search_button.Bind(wx.EVT_BUTTON, self.on_search_lyrics)
-        self.google_button = wx.Button(panel, label="Search Google")
-        self.google_button.Bind(wx.EVT_BUTTON, self.on_google_search)
+        self.searchengine_button = wx.Button(panel, label="Search with Google")
+        self.searchengine_button.Bind(wx.EVT_BUTTON, self.on_google_search)
         grid.Add(self.search_button, pos=(2, 0))
-        grid.Add(self.google_button, pos=(2, 1))
+        grid.Add(self.searchengine_button, pos=(2, 1))
 
         # Lyrics TextBox (dynamisch formaat)
         self.lyrics_text = wx.TextCtrl(panel, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.VSCROLL)
@@ -174,10 +179,32 @@ class LyricsFinder(wx.Frame):
         # Center the frame
         self.Centre()
 
-        # Set the translation for the UI based on the system language
+        self.load_config(self.configFilePath)
         self.set_translation()
+        self.multiMediaTitleFetcher = MultiMediaTitleFetcher(self.update_ui, self.configFilePath)
+        self.lyrics_text.SetValue(self.message_nosong)
 
-        self.multiMediaTitleFetcher = MultiMediaTitleFetcher(self.update_ui)
+    import json
+
+    def load_config(self, config_path):
+        """Reads config.json and returns the 'search' object."""
+        try:
+            with open(config_path, 'r') as file:
+                config = json.load(file)
+
+            # Get the 'search' object from the config
+            self.search_config = config.get("search", {})
+            self.language = config.get("language", "auto")
+
+            if not self.search_config:
+                print("Search configuration not found.")
+
+        except FileNotFoundError:
+            print(f"Config file not found: {config_path}")
+            return None
+        except json.JSONDecodeError:
+            print(f"Error decoding the config file: {config_path}")
+            return None
 
     def set_translation(self):
         # Get the system language (e.g., 'en', 'fr', etc.)
@@ -185,62 +212,79 @@ class LyricsFinder(wx.Frame):
         #lang_code = lang_os_to_iso.get(system_lang[:2].lower(), 'eng')  # default to 'eng' if no match
 
         # Get the user language in three letter format (etc eng, dut, fre)
-        locale.setlocale(locale.LC_ALL, "")
-        locale_info = locale.getlocale()
-        user_lang = locale_info[0].split('_')[0] if locale_info and locale_info[0] else 'English'
-        lang_code_2 = locale.normalize(user_lang)[:2].lower() if locale.normalize(user_lang) else "en"
-        lang_code = lang_os_to_iso.get(lang_code_2, 'en')
-
-        # Get the folder where the .py script is located
-        if getattr(sys, 'frozen', False):  # Check if the app is frozen (running from a packaged .exe)
-            script_dir = sys._MEIPASS  # Running as a bundled executable
+        if self.language == "auto":
+            locale.setlocale(locale.LC_ALL, "")
+            locale_info = locale.getlocale()
+            user_lang = locale_info[0].split('_')[0] if locale_info and locale_info[0] else 'English'
+            lang_code_2 = locale.normalize(user_lang)[:2].lower() if locale.normalize(user_lang) else "en"
         else:
-            script_dir = os.path.dirname(os.path.abspath(__file__)) # Running as a normal script
+            lang_code_2 = self.language.lower()
 
-        locale_folder = os.path.join(script_dir, 'locale')  # Assuming locale folder is in the same directory as the script
+        lang_code = lang_os_to_iso.get(lang_code_2, 'eng')
+
+        locale_folder = FileUtils.get_file_path('locale')  # Assuming locale folder is in the same directory as the script
         translation_file = os.path.join(locale_folder, f"{lang_code}.xml")
         
         # Check if the translation file exists
         if not os.path.exists(translation_file):
-            wx.MessageBox(f"Translation file for language {lang_code} not found. Using default language.", "Translation Error", wx.OK | wx.ICON_ERROR)
+            wx.MessageBox(f"Translation file for language {lang_code} not found at {translation_file}. Using default language.", "Translation Error", wx.OK | wx.ICON_ERROR)
             translation_file = os.path.join(locale_folder, "eng.xml")  # Fallback to English
-        
-        # Parse the XML file
+
+        # Define default values in a dictionary
+        default_texts = {
+            "label_title": "Title:",
+            "label_artist": "Artist:",
+            "label_source": "Source:",
+            "message_savelyrics": "Save Lyrics",
+            "button_getlyrics": "Get Lyrics",
+            "button_google": "Search with Google",
+            "button_update": "Get updates",
+            "button_switch": "Switch",
+            "message_loading": "Loading..",
+            "message_notfound": "Lyrics not found.",
+            "message_nosong": "No song loaded.",
+            "message_newsong": "New song loaded. To get the lyrics, click Get Lyrics.",
+            "message_incorrect": "Incorrect artist or title.",
+        }
+
+        # Function to get text from XML or fall back to defaults
+        def get_text_or_default(root, key):
+            if root is not None:
+                node = root.find(key)
+                if node is not None and node.text:
+                    return node.text
+            return default_texts[key]  # Fallback to default
+
+        # Try to load and parse the XML file
         try:
             tree = ET.parse(translation_file)
             root = tree.getroot()
+        except (ET.ParseError, FileNotFoundError) as e:
+            logging.warning(f"Could not load translation file: {e}")
+            root = None  # Ensures we always use defaults if XML is missing or broken
 
-            # Helper function to safely get the text of a node
-            def get_text_or_default(node, default=''):
-                return node.text if node is not None else default
+        # Apply labels using the function
+        self.title_label.SetLabel(get_text_or_default(root, "label_title"))
+        self.artist_label.SetLabel(get_text_or_default(root, "label_artist"))
+        self.source_label.SetLabel(get_text_or_default(root, "label_source"))
+        self.save_button.SetLabel(get_text_or_default(root, "message_savelyrics"))
+        self.search_button.SetLabel(get_text_or_default(root, "button_getlyrics"))
+        self.searchengine_button.SetLabel(get_text_or_default(root, "button_google"))
+        self.update_button.SetLabel(get_text_or_default(root, "button_update"))
+        self.switch_button.SetLabel(get_text_or_default(root, "button_switch"))
 
-            # Assign the translated text to UI elements
-            self.title_label.SetLabel(get_text_or_default(root.find('label_title'), 'Title:'))
-            self.artist_label.SetLabel(get_text_or_default(root.find('label_artist'), 'Artist:'))
-            self.source_label.SetLabel(get_text_or_default(root.find('label_source'), 'Source:'))
-            self.save_button.SetLabel(get_text_or_default(root.find('message_savelyrics'), 'Save Lyrics'))
-            self.search_button.SetLabel(get_text_or_default(root.find('button_getlyrics'), 'Get Lyrics'))
-            self.google_button.SetLabel(get_text_or_default(root.find('button_google'), 'Search with Google'))
-            self.update_button.SetLabel(get_text_or_default(root.find('button_update'), 'Get updates'))
-            self.switch_button.SetLabel(get_text_or_default(root.find('button_switch'), 'Switch'))
+        # Assign message texts
+        self.message_loading = get_text_or_default(root, "message_loading")
+        self.message_notfound = get_text_or_default(root, "message_notfound")
+        self.message_nosong = get_text_or_default(root, "message_nosong")
+        self.message_newsong = get_text_or_default(root, "message_newsong")
+        self.message_incorrect = get_text_or_default(root, "message_incorrect")
+        self.message_savelyrics = get_text_or_default(root, "message_savelyrics")
 
-            # Other elements (for messages, etc.)
-            self.message_loading = get_text_or_default(root.find('message_loading'), "Loading..")
-            self.message_notfound = get_text_or_default(root.find('message_notfound'), 'Lyrics not found.')
-            self.message_nosong = get_text_or_default(root.find('message_nosong'), 'No song loaded.')
-            self.message_newsong = get_text_or_default(root.find('message_newsong'), 'New song loaded. To get the lyrics, click Get Lyrics.')
-            self.message_incorrect = get_text_or_default(root.find('message_incorrect'), 'Incorrect artist or title.')
-            self.message_savelyrics = get_text_or_default(root.find('message_savelyrics'), 'Save Lyrics')
+        searchengine = self.search_config.get("engine")
+        if searchengine != "Google":
+            self.searchengine_button.SetLabel(get_text_or_default(root, "button_google").replace('Google', searchengine))
 
-        except ET.ParseError as e:
-            error_msg = f"Error parsing the translation file. Details: {str(e)}"
-            wx.MessageBox(error_msg, "Translation Parsing Error", wx.OK | wx.ICON_ERROR)
-            logging.error(f"Parsing error: {error_msg}")  # Log error details for debugging
-        except Exception as e:
-            error_msg = f"Unexpected error occurred while loading translation: {str(e)}"
-            wx.MessageBox(error_msg, "Translation Error", wx.OK | wx.ICON_ERROR)
-            logging.error(f"Unexpected error: {error_msg}")  # Log unexpected errors for debugging
-    
     def update_ui(self, new_title):
         #new_title = new_title.replace("—", "-");
 
@@ -291,7 +335,7 @@ class LyricsFinder(wx.Frame):
         else:
             #logging.info(f"update_lyrics: Playing media: {clean_artist} - {clean_title}")
             notification.notify(
-                title=f'Multi Lyrics Finder',
+                title=f'',
                 message=f'{clean_artist} - {clean_title}',
                 timeout=10  # Show for X seconds
             )
@@ -300,8 +344,11 @@ class LyricsFinder(wx.Frame):
             self.lyrics_text.SetValue(lyric_string)
 
     def on_google_search(self, event):
-        query = f"{self.title_text.GetValue()} {self.artist_text.GetValue()} lyrics"
-        search_url = f"https://www.google.com/search?q={query.replace(' ', '+')}"
+        searchurl = self.search_config.get("searchurl")
+        suffix = self.search_config.get("suffix")
+
+        query = f"{self.title_text.GetValue()} {self.artist_text.GetValue()} {suffix}"
+        search_url = f"{searchurl}{query.replace(' ', '+')}"
         webbrowser.open(search_url)
     
     def on_check_updates(self, event):

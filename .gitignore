@@ -2,6 +2,7 @@
 /.idea/shelf/
 /.idea/workspace.xml
 /.idea/vcs.xml
+/.idea/.name
 
 build/
 dist/

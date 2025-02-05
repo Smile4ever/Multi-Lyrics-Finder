@@ -5,16 +5,57 @@ import wx
 import pywinctl as pwc
 import psutil
 import logging
+import json
 
 class MultiMediaTitleFetcher:
-    def __init__(self, callback):
-        logging.basicConfig(level=logging.INFO)  # Latere aanpassing mogelijk naar `INFO` of `DEBUG`
+    def __init__(self, callback, config_file):
+        logging.basicConfig(level=logging.INFO)  # Later change to `INFO` or `DEBUG`
 
         self.callback = callback
         self._title = ""
         self.running = True
+
+        # Load configuration
+        self.config = self.load_config(config_file)
+
+        # Create media players based on config data
+        self.media_players = self.create_media_players()
+
+        # Start title fetching thread
         self.thread = threading.Thread(target=self.fetch_title_loop, daemon=True)
         self.thread.start()
+
+    def load_config(self, config_file):
+        """Load the configuration from the specified JSON file."""
+        try:
+            with open(config_file, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            logging.error(f"Failed to load config file: {e}")
+            return {}
+
+    def create_media_players(self):
+        """Create a list of media players based on the config data."""
+        media_players = []
+
+        # Iterate through the list of media players
+        for config in self.config.get("media_players", []):
+            # Skip disabled players
+            if config.get("disabled", False):
+                continue
+
+            app = config["name"]  # Access the 'name' of the media player
+            if config["type"] == "generic":
+                media_players.append((app, self.get_media_title_generic, config))
+            if config["type"] == "flexible":
+                media_players.append((app, self.get_media_title_generic_flexible, config))
+            elif config["type"] == "checkappprocess":
+                media_players.append((app, self.get_media_title_generic_checkappprocess, config))
+
+        # Sort players by priority
+        media_players.sort(key=lambda x: x[2]["priority"])
+
+        return media_players
 
     def fetch_title_loop(self):
         while self.running:
@@ -25,26 +66,19 @@ class MultiMediaTitleFetcher:
             threading.Event().wait(1)
 
     def get_media_title(self):
-        media_sources = [
-            self.get_media_title_generic("Deezer"),
-            self.get_media_title_generic("VLC Media Player"),
-            self.get_media_title_generic("Spotify"),
-            self.get_media_title_generic("YouTube"),
-            self.get_media_title_spotifyapp(),
-            self.get_media_title_deezerapp()
-        ]
-
-        # Iterate over the media sources and return the first non-None result
-        for media_title in media_sources:
-            if media_title:
-                return media_title
-
+        """Iterate over the media players and return the first non-None title."""
+        for app, func, config in self.media_players:
+            window_title = func(app, config)
+            if window_title:
+                title = self.split_title(window_title, app, config)
+                return title
         return None
 
-    def get_media_title_spotifyapp(self):
-        spotify_processes = [
+    def get_media_title_generic_checkappprocess(self, app, config):
+        """Get title for media player based on process check."""
+        app_processes = [
             proc for proc in psutil.process_iter(['pid', 'name'])
-            if proc.info['name'].lower().split('.')[0] == 'spotify'
+            if proc.info['name'].lower().split('.')[0] == app.lower()
         ]
 
         windows_pwc = pwc.getWindowsWithTitle(' - ', condition=pwc.Re.CONTAINS)
@@ -52,38 +86,61 @@ class MultiMediaTitleFetcher:
         for window in windows_pwc:
             pid = window.getPID()
 
-            for spotify_process in spotify_processes:
-                if pid == spotify_process.info['pid']:
+            for app_process in app_processes:
+                if pid == app_process.info['pid']:
+                    # Return the raw window title
                     return window.title
 
         return None
 
-    def get_media_title_deezerapp(self):
-        spotify_processes = [
-            proc for proc in psutil.process_iter(['pid', 'name'])
-            if proc.info['name'].lower().split('.')[0] == 'deezer'
-        ]
-
-        windows_pwc = pwc.getWindowsWithTitle(' - ', condition=pwc.Re.CONTAINS)
+    def get_media_title_generic_flexible(self, app, config):
+        """Get generic media player title."""
+        windows_pwc = pwc.getWindowsWithTitle(app, condition=pwc.Re.CONTAINS)
 
         for window in windows_pwc:
-            pid = window.getPID()
-
-            for spotify_process in spotify_processes:
-                if pid == spotify_process.info['pid']:
-                    return window.title
+            # Return the raw window title
+            if '-' in window.title:
+                return window.title
 
         return None
 
-    def get_media_title_generic(self, app):
+    def get_media_title_generic(self, app, config):
+        """Get generic media player title."""
         windows_pwc = pwc.getWindowsWithTitle(' - ' + app, condition=pwc.Re.CONTAINS)
 
         for window in windows_pwc:
-            title = window.title
-            if app == "Deezer": return " - ".join(title.split(" - " + app)[0].split(" - ")[::-1])
-            if app == "Spotify": return " - ".join(title.split(" - " + app)[0].split(" • ")[::-1])
-            if app == "YouTube": return title.split(" - " + app)[0].strip()
-            if app == "VLC Media Player": return title.split(" - " + app)[0].strip()
+            # Return the raw window title
+            return window.title
+
+        return None
+
+    def split_title(self, window_title, app, config):
+        """Split the window title based on the format string defined in the config."""
+
+        format_str = config["format"]
+        # Special case for Spotify App titles (and others that don't contain {app}), so we don't need to change our extraction logic
+        if "{app}" not in format_str:
+            window_title = window_title + " - {app}";
+
+        # Default case for other apps
+        if format_str.count("{artist}") and format_str.count("{title}"):
+            if " - " in window_title:
+                parts = window_title.split(" - ")
+            elif " • " in window_title:
+                parts = window_title.split(" • ")
+            else:
+                parts = window_title.split(" - ")
+
+            # Logic to extract artist and title based on the format
+            artist = ""
+            title = ""
+            if "{artist}" in format_str and len(parts) > 1:
+                artist = parts[0].strip()
+            if "{title}" in format_str and len(parts) > 1:
+                title = parts[-2].strip()
+
+            return f"{artist} - {title}"
+
         return None
 
     def stop(self):
