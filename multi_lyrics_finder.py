@@ -1,5 +1,5 @@
 VERSION = \
-"0.1.1"
+"0.1.2"
 
 import wx
 import webbrowser
@@ -11,6 +11,7 @@ import platform
 import locale
 import logging
 import json
+import ctypes
 
 import xml.etree.ElementTree as ET
 from plyer import notification
@@ -96,7 +97,10 @@ class LyricsFinder(wx.Frame):
         logging.basicConfig(level=logging.INFO)
 
         super().__init__(None, title="Multi Lyrics Finder " + VERSION, size=(500, 800))
+        font = wx.Font(11, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+
         panel = wx.Panel(self)
+        panel.SetFont(font);
         panel.SetSizer(wx.BoxSizer(wx.VERTICAL))
 
         # Create GridBagSizer for the main UI layout
@@ -130,6 +134,7 @@ class LyricsFinder(wx.Frame):
 
         # Lyrics TextBox (dynamisch formaat)
         self.lyrics_text = wx.TextCtrl(panel, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.VSCROLL)
+        #self.lyrics_text.SetFont(font)
         grid.Add(self.lyrics_text, pos=(3, 0), span=(1, 3), flag=wx.EXPAND, border=5)
 
         # Make it flexible
